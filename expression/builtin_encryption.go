@@ -16,6 +16,7 @@ package expression
 import (
 	"bytes"
 	"compress/zlib"
+	"crypto/des"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/sha1"
@@ -285,6 +286,24 @@ type builtinDesEncryptSig struct {
 // eval evals a builtinDesEncryptSig.
 // See https://dev.mysql.com/doc/refman/5.7/en/encryption-functions.html#function_des-encrypt
 func (b *builtinDesEncryptSig) eval(row []types.Datum) (d types.Datum, err error) {
+	args, err := b.evalArgs(row)
+	if err != nil {
+		return d, errors.Trace(err)
+	}
+	for _, arg := range args {
+		// If either function argument is NULL, the function returns NULL.
+		if arg.IsNull() {
+			return
+		}
+	}
+	str, err := args[0].ToBytes()
+	if err != nil {
+		return d, errors.Trace(err)
+	}
+	key, err := args[1].ToBytes()
+	if err != nil {
+		return d, errors.Trace(err)
+	}
 	return d, errFunctionNotExists.GenByArgs("DES_ENCRYPT")
 }
 
